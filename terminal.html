@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NVG Terminal - Multi-Platform Command Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #00ff88;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .terminal-container {
+            max-width: 1200px;
+            height: 90vh;
+            margin: 0 auto;
+            background: rgba(10, 14, 39, 0.95);
+            border: 2px solid #00ff88;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.3), inset 0 0 30px rgba(0, 255, 136, 0.05);
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background: linear-gradient(90deg, #1a1f3a 0%, #2d3454 100%);
+            border-bottom: 2px solid #00ff88;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .header-title {
+            font-weight: bold;
+            color: #00ff88;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .header-info {
+            color: #00ff88;
+            opacity: 0.7;
+            font-size: 12px;
+        }
+
+        .terminal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .terminal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .terminal-body::-webkit-scrollbar-track {
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        .terminal-body::-webkit-scrollbar-thumb {
+            background: #00ff88;
+            border-radius: 4px;
+        }
+
+        .terminal-line {
+            display: flex;
+            gap: 8px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .prompt {
+            color: #00ff88;
+            font-weight: bold;
+            min-width: max-content;
+        }
+
+        .command-input {
+            flex: 1;
+            color: #00ff88;
+            word-break: break-all;
+        }
+
+        .output {
+            color: #00d4ff;
+            padding: 8px 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin-left: 20px;
+        }
+
+        .output.error {
+            color: #ff4444;
+        }
+
+        .output.success {
+            color: #00ff88;
+        }
+
+        .output.info {
+            color: #ffaa00;
+        }
+
+        .output.code {
+            color: #00d4ff;
+            background: rgba(0, 255, 136, 0.05);
+            padding: 12px;
+            border-left: 3px solid #00ff88;
+            margin: 8px 0;
+            overflow-x: auto;
+        }
+
+        .terminal-input-line {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            border-top: 1px solid rgba(0, 255, 136, 0.2);
+            padding-top: 12px;
+        }
+
+        #commandInput {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #00ff88;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            outline: none;
+            caret-color: #00ff88;
+        }
+
+        .cursor-blink {
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 49% {
+                opacity: 1;
+            }
+            50%, 100% {
+                opacity: 0;
+            }
+        }
+
+        .help-section {
+            color: #00ff88;
+            margin: 16px 0;
+            border-top: 1px dashed rgba(0, 255, 136, 0.3);
+            padding-top: 8px;
+        }
+
+        .plugin-info {
+            color: #ffaa00;
+            margin: 4px 0;
+            font-size: 12px;
+        }
+
+        .url-link {
+            color: #00d4ff;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .url-link:hover {
+            color: #00ff88;
+        }
+
+        .status-bar {
+            background: rgba(0, 255, 136, 0.05);
+            border-top: 1px solid #00ff88;
+            padding: 8px 20px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            color: #00ff88;
+            opacity: 0.7;
+        }
+
+        .char-count {
+            color: #ffaa00;
+        }
+
+        .var-display {
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid #00d4ff;
+            border-radius: 4px;
+            padding: 8px 12px;
+            margin: 4px 0;
+            font-size: 12px;
+            color: #00d4ff;
+        }
+
+        .var-name {
+            color: #ffaa00;
+            font-weight: bold;
+        }
+
+        .popup-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 2px solid #00ff88;
+            border-radius: 4px;
+            padding: 12px 16px;
+            color: #00ff88;
+            font-size: 12px;
+            z-index: 10000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .terminal-container {
+                height: 100vh;
+                border-radius: 0;
+            }
+            
+            #commandInput {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <div class="header-title">NVG TERMINAL v1.0 - Multi-Platform Integration</div>
+            <div class="header-info">Ready for commands</div>
+        </div>
+
+        <div class="terminal-body" id="terminalBody">
+            <div class="terminal-line">
+                <span class="prompt">></span>
+                <span class="output">NVG Terminal loaded. Type 'help' for available commands.</span>
+            </div>
+        </div>
+
+        <div class="terminal-input-line">
+            <span class="prompt">$\:nvg:{</span>
+            <input type="text" id="commandInput" placeholder="command" autocomplete="off">
+        </div>
+
+        <div class="status-bar">
+            <span id="statusText">Ready</span>
+            <span class="char-count" id="charCount">0 chars</span>
+        </div>
+    </div>
+
+    <script>
+        const terminalBody = document.getElementById('terminalBody');
+        const commandInput = document.getElementById('commandInput');
+        const statusText = document.getElementById('statusText');
+        const charCount = document.getElementById('charCount');
+
+        // Variable storage
+        const variables = {};
+        const windowReferences = {};
+        let windowCounter = 0;
+
+        // Plugin system
+        const plugins = {
+            github: {
+                name: 'GitHub Pages',
+                pattern: /^git:\/\/(.+?)\/(.+?)\/(.+)$/,
+                handler: async (match) => {
+                    const [, user, repo, path] = match;
+                    const url = `https://${user}.github.io/${repo}/${path}`;
+                    return {
+                        type: 'success',
+                        content: `Fetching from GitHub Pages: ${url}`,
+                        rawUrl: url
+                    };
+                }
+            },
+            vercel: {
+                name: 'Vercel',
+                pattern: /^vercel:\/\/(.+?)\/(.+)$/,
+                handler: async (match) => {
+                    const [, subdomain, path] = match;
+                    const url = `https://${subdomain}.vercel.app/${path}`;
+                    return {
+                        type: 'success',
+                        content: `Fetching from Vercel: ${url}`,
+                        rawUrl: url
+                    };
+                }
+            },
+            railway: {
+                name: 'Railway',
+                pattern: /^railway:\/\/(.+?)\/(.+)$/,
+                handler: async (match) => {
+                    const [, projectId, path] = match;
+                    const url = `https://${projectId}.railway.app/${path}`;
+                    return {
+                        type: 'success',
+                        content: `Fetching from Railway: ${url}`,
+                        rawUrl: url
+                    };
+                }
+            },
+            bolt: {
+                name: 'Bolt',
+                pattern: /^bolt:\/\/(.+?)\/(.+)$/,
+                handler: async (match) => {
+                    const [, projectId, path] = match;
+                    const url = `https://bolt.${projectId}.app/${path}`;
+                    return {
+                        type: 'success',
+                        content: `Fetching from Bolt: ${url}`,
+                        rawUrl: url
+                    };
+                }
+            },
+            netlify: {
+                name: 'Netlify',
+                pattern: /^netlify:\/\/(.+?)\/(.+)$/,
+                handler: async (match) => {
+                    const [, siteName, path] = match;
+                    const url = `https://${siteName}.netlify.app/${path}`;
+                    return {
+                        type: 'success',
+                        content: `Fetching from Netlify: ${url}`,
+                        rawUrl: url
+                    };
+                }
+            },
+            local: {
+                name: 'Local Server',
+                pattern: /^local:\/\/(.+?):(\d+)\/(.+)$/,
+                handler: async (match) => {
+                    const [, host, port, path] = match;
+                    const url = `http://${host}:${port}/${path}`;
+                    return {
+                        type: 'success',
+                        content: `Fetching from Local Server: ${url}`,
+                        rawUrl: url
+                    };
+                }
+            }
+        };
+
+        // Commands
+        const commands = {
+            help: () => {
+                return `
+AVAILABLE COMMANDS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 HELP & INFO:
+  help              - Show this help message
+  about             - About NVG Terminal
+  plugins           - List available plugins
+  
+🔌 PLUGINS (Fetch content using protocols):
+  git://user/repo/path              - GitHub Pages
+  vercel://subdomain/path           - Vercel
+  railway://projectId/path          - Railway
+  bolt://projectId/path             - Bolt
+  netlify://siteName/path           - Netlify
+  local://host:port/path            - Local server
+
+💾 FILE OPERATIONS & WINDOWS:
+  fetch <url>                       - Fetch content from URL
+  get <protocol://path>             - Get using protocol handler
+  cat <path>                        - Display file content
+  open window <type> [data]         - Open new window (popup|frame|html|blob)
+  open <url> [fullscreen|frame]     - Open URL in window
+
+📦 VARIABLES & STORAGE:
+  var <name> = <value>              - Set variable
+  var <name>                        - Get variable value
+  var list                          - List all variables
+  var delete <name>                 - Delete variable
+  var clear                         - Clear all variables
+  set <name> = <value>              - Alias for var set
+
+🪟 WINDOW MANAGEMENT:
+  windows list                      - List open windows
+  windows close <id>                - Close specific window
+  windows closeall                  - Close all windows
+  window focus <id>                 - Focus window
+
+🔧 UTILITIES:
+  echo <text>                       - Print text
+  clear                             - Clear terminal
+  whoami                            - Show current user
+  date                              - Show current date/time
+  time                              - Show current time
+  ip                                - Show connection info
+  random [min max]                  - Random number
+  base64 encode <text>              - Encode to base64
+  base64 decode <text>              - Decode from base64
+  math <expression>                 - Calculate expression (2+2, 10*5, etc)
+
+SYNTAX:
+  Commands start with: $\\:nvg:{
+  Variables: var myVar = some value
+  Windows: open window frame https://example.com
+  URLs with fullscreen: open https://example.com fullscreen
+  
+EXAMPLE COMMANDS:
+  $\\:nvg:{var url = https://example.com
+  $\\:nvg:{open window frame $url
+  $\\:nvg:{open https://example.com fullscreen
+  $\\:nvg:{math 25 * 4
+  $\\:nvg:{base64 encode Hello World
+`;
+            },
+            about: () => {
+                return `
+╔════════════════════════════════════════════════════════════╗
+║           NVG TERMINAL - Multi-Platform CLI v1.0           ║
+║   Navigate, Fetch, and Execute across multiple platforms   ║
+╚════════════════════════════════════════════════════════════╝
+
+FEATURES:
+  ✓ Multi-protocol support (GitHub, Vercel, Railway, etc.)
+  ✓ Smart URL fetching and parsing
+  ✓ Plugin-based architecture
+  ✓ Real-time command execution
+  ✓ Cross-platform compatibility
+
+SUPPORTED PLATFORMS:
+  • GitHub Pages (git://)
+  • Vercel (vercel://)
+  • Railway (railway://)
+  • Bolt (bolt://)
+  • Netlify (netlify://)
+  • Local Servers (local://)
+
+Type 'plugins' for more information about available integrations.
+Type 'help' for complete command list.`;
+            },
+            plugins: () => {
+                let output = '\nINSTALLED PLUGINS:\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+                Object.entries(plugins).forEach(([key, plugin]) => {
+                    output += `📌 ${plugin.name.toUpperCase()} (${key}://)\n`;
+                    output += `   Pattern: ${plugin.pattern.toString()}\n\n`;
+                });
+                return output;
+            },
+            clear: () => {
+                terminalBody.innerHTML = '';
+                return null;
+            },
+            whoami: () => {
+                return 'User: nvg_terminal_user\nLevel: Administrator\nHost: terminal.local';
+            },
+            date: () => {
+                const now = new Date();
+                return now.toString();
+            },
+            echo: (args) => {
+                return args.join(' ') || '(empty)';
+            },
+            get: async (args) => {
+                const input = args.join(' ');
+                for (const [key, plugin] of Object.entries(plugins)) {
+                    const matches = input.match(plugin.pattern);
+                    if (matches) {
+                        try {
+                            const result = await plugin.handler(matches);
+                            return result;
+                        } catch (error) {
+                            return { type: 'error', content: `Error: ${error.message}` };
+                        }
+                    }
+                }
+                return { type: 'error', content: `Unknown protocol. Use 'help' to see available protocols.` };
+            },
+            fetch: async (args) => {
+                const url = args.join(' ');
+                if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                    return { type: 'error', content: `Invalid URL. Must start with http:// or https://` };
+                }
+                try {
+                    const response = await fetch(url);
+                    const text = await response.text();
+                    return {
+                        type: 'success',
+                        content: `Content fetched successfully (${text.length} bytes)`,
+                        code: text.substring(0, 500) + (text.length > 500 ? '\n... (truncated)' : '')
+                    };
+                } catch (error) {
+                    return { type: 'error', content: `Fetch failed: ${error.message}. Note: CORS may restrict requests.` };
+                }
+            },
+            cat: (args) => {
+                return { type: 'info', content: `File operation: ${args.join(' ')}\nContent display requires actual file system access.` };
+            },
+            var: (args) => {
+                if (!args.length) {
+                    return { type: 'error', content: 'Usage: var <name> [= value] or var list/delete/clear' };
+                }
+
+                if (args[0] === 'list') {
+                    if (Object.keys(variables).length === 0) {
+                        return { type: 'info', content: 'No variables set.' };
+                    }
+                    let output = '\n📦 VARIABLES:\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+                    Object.entries(variables).forEach(([name, value]) => {
+                        output += `${name} = ${JSON.stringify(value)}\n`;
+                    });
+                    return output;
+                }
+
+                if (args[0] === 'clear') {
+                    Object.keys(variables).forEach(key => delete variables[key]);
+                    return { type: 'success', content: 'All variables cleared.' };
+                }
+
+                if (args[0] === 'delete') {
+                    const varName = args[1];
+                    if (!varName) {
+                        return { type: 'error', content: 'Usage: var delete <name>' };
+                    }
+                    if (variables.hasOwnProperty(varName)) {
+                        delete variables[varName];
+                        return { type: 'success', content: `Variable '${varName}' deleted.` };
+                    }
+                    return { type: 'error', content: `Variable '${varName}' not found.` };
+                }
+
+                // var name = value
+                const name = args[0];
+                if (args[1] === '=' && args.length > 2) {
+                    const value = args.slice(2).join(' ');
+                    variables[name] = value;
+                    return { type: 'success', content: `✓ ${name} = ${value}` };
+                }
+
+                // var name (get value)
+                if (variables.hasOwnProperty(name)) {
+                    return { type: 'info', content: `${name} = ${JSON.stringify(variables[name])}` };
+                }
+
+                return { type: 'error', content: `Variable '${name}' not defined.` };
+            },
+            set: (args) => {
+                // Alias for var command
+                return commands.var(args);
+            },
+            open: async (args) => {
+                if (!args.length) {
+                    return { type: 'error', content: 'Usage: open <url> [fullscreen|frame] or open window <type> [data]' };
+                }
+
+                // open window <type> [data]
+                if (args[0] === 'window') {
+                    if (!args[1]) {
+                        return { type: 'error', content: 'Usage: open window <popup|frame|html|blank|blob> [data]' };
+                    }
+
+                    const windowType = args[1].toLowerCase();
+                    const data = args.slice(2).join(' ');
+                    const windowId = `win_${windowCounter++}`;
+
+                    try {
+                        if (windowType === 'popup' || windowType === 'blank') {
+                            const newWindow = window.open('about:blank', windowId, 'width=1024,height=768,resizable=yes');
+                            if (newWindow) {
+                                windowReferences[windowId] = newWindow;
+                                if (data) {
+                                    newWindow.document.write(`<html><body style="font-family:monospace;padding:20px;"><pre>${data}</pre></body></html>`);
+                                }
+                                newWindow.document.close();
+                                showNotification(`Window opened: ${windowId}`);
+                                return { type: 'success', content: `Popup window created: ${windowId}` };
+                            }
+                            return { type: 'error', content: 'Popup blocked. Allow popups in browser settings.' };
+                        }
+
+                        if (windowType === 'html') {
+                            const newWindow = window.open('about:blank', windowId, 'width=1024,height=768,resizable=yes');
+                            if (newWindow) {
+                                windowReferences[windowId] = newWindow;
+                                newWindow.document.write(data || '<html><body>Empty HTML Window</body></html>');
+                                newWindow.document.close();
+                                showNotification(`HTML window opened: ${windowId}`);
+                                return { type: 'success', content: `HTML window created: ${windowId}` };
+                            }
+                            return { type: 'error', content: 'Popup blocked.' };
+                        }
+
+                        if (windowType === 'blob') {
+                            const blob = new Blob([data || 'Blob Content'], { type: 'text/plain' });
+                            const blobUrl = URL.createObjectURL(blob);
+                            const newWindow = window.open(blobUrl, windowId, 'width=1024,height=768,resizable=yes');
+                            if (newWindow) {
+                                windowReferences[windowId] = newWindow;
+                                showNotification(`Blob window opened: ${windowId}`);
+                                return { type: 'success', content: `Blob window created: ${windowId}` };
+                            }
+                            return { type: 'error', content: 'Popup blocked.' };
+                        }
+
+                        if (windowType === 'frame') {
+                            const frameContainer = document.createElement('div');
+                            frameContainer.id = windowId;
+                            frameContainer.style.cssText = `
+                                position: fixed;
+                                top: 0;
+                                left: 0;
+                                width: 100%;
+                                height: 100%;
+                                background: rgba(0,0,0,0.9);
+                                z-index: 9999;
+                                display: flex;
+                                flex-direction: column;
+                            `;
+
+                            const header = document.createElement('div');
+                            header.style.cssText = `
+                                background: #1a1f3a;
+                                border-bottom: 2px solid #00ff88;
+                                padding: 12px 20px;
+                                color: #00ff88;
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                            `;
+                            header.innerHTML = `
+                                <span>Frame: ${windowId}</span>
+                                <button onclick="document.getElementById('${windowId}').remove()" style="
+                                    background: #00ff88;
+                                    border: none;
+                                    color: #0a0e27;
+                                    padding: 8px 16px;
+                                    cursor: pointer;
+                                    border-radius: 4px;
+                                    font-weight: bold;
+                                ">Close</button>
+                            `;
+
+                            const iframe = document.createElement('iframe');
+                            iframe.style.cssText = `
+                                flex: 1;
+                                border: none;
+                                background: white;
+                            `;
+                            iframe.allow = 'fullscreen';
+                            iframe.src = data || 'about:blank';
+
+                            frameContainer.appendChild(header);
+                            frameContainer.appendChild(iframe);
+                            document.body.appendChild(frameContainer);
+                            windowReferences[windowId] = frameContainer;
+                            showNotification(`Frame window opened: ${windowId}`);
+                            return { type: 'success', content: `Frame window created: ${windowId}\nURL: ${data || 'blank'}` };
+                        }
+
+                        return { type: 'error', content: 'Unknown window type. Use: popup, blank, html, blob, or frame' };
+                    } catch (error) {
+                        return { type: 'error', content: `Error creating window: ${error.message}` };
+                    }
+                }
+
+                // open <url> [fullscreen|frame]
+                const url = args[0];
+                const mode = args[1]?.toLowerCase() || 'popup';
+
+                if (!url.startsWith('http://') && !url.startsWith('https://') && !variables[url]) {
+                    return { type: 'error', content: 'Invalid URL. Use http://, https://, or reference a variable.' };
+                }
+
+                const finalUrl = variables[url] || url;
+
+                try {
+                    if (mode === 'frame') {
+                        const windowId = `url_frame_${windowCounter++}`;
+                        const frameContainer = document.createElement('div');
+                        frameContainer.id = windowId;
+                        frameContainer.style.cssText = `
+                            position: fixed;
+                            top: 0;
+                            left: 0;
+                            width: 100%;
+                            height: 100%;
+                            background: rgba(0,0,0,0.9);
+                            z-index: 9999;
+                            display: flex;
+                            flex-direction: column;
+                        `;
+
+                        const header = document.createElement('div');
+                        header.style.cssText = `
+                            background: #1a1f3a;
+                            border-bottom: 2px solid #00ff88;
+                            padding: 12px 20px;
+                            color: #00ff88;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            gap: 10px;
+                        `;
+                        header.innerHTML = `
+                            <span style="flex:1;word-break:break-all;">${finalUrl}</span>
+                            <button onclick="document.getElementById('${windowId}').querySelector('iframe').requestFullscreen().catch()" style="
+                                background: #ffaa00;
+                                border: none;
+                                color: #0a0e27;
+                                padding: 8px 12px;
+                                cursor: pointer;
+                                border-radius: 4px;
+                                font-weight: bold;
+                                white-space: nowrap;
+                            ">⛶ Fullscreen</button>
+                            <button onclick="document.getElementById('${windowId}').remove()" style="
+                                background: #00ff88;
+                                border: none;
+                                color: #0a0e27;
+                                padding: 8px 16px;
+                                cursor: pointer;
+                                border-radius: 4px;
+                                font-weight: bold;
+                            ">Close</button>
+                        `;
+
+                        const iframe = document.createElement('iframe');
+                        iframe.style.cssText = `
+                            flex: 1;
+                            border: none;
+                            background: white;
+                        `;
+                        iframe.allow = 'fullscreen; picture-in-picture; accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; payment; usb; xr-spatial-tracking';
+                        iframe.src = finalUrl;
+
+                        frameContainer.appendChild(header);
+                        frameContainer.appendChild(iframe);
+                        document.body.appendChild(frameContainer);
+                        windowReferences[windowId] = frameContainer;
+                        showNotification(`Frame opened with fullscreen support`);
+                        return { type: 'success', content: `URL opened in frame: ${windowId}\nURL: ${finalUrl}\nClick button to enable fullscreen` };
+                    } else {
+                        const newWindow = window.open(finalUrl, `url_window_${windowCounter++}`, 'width=1024,height=768,resizable=yes');
+                        if (newWindow) {
+                            showNotification(`Window opened: ${finalUrl}`);
+                            return { type: 'success', content: `URL opened in popup: ${finalUrl}` };
+                        }
+                        return { type: 'error', content: 'Popup blocked.' };
+                    }
+                } catch (error) {
+                    return { type: 'error', content: `Error opening URL: ${error.message}` };
+                }
+            },
+            windows: (args) => {
+                if (!args.length || args[0] === 'list') {
+                    if (Object.keys(windowReferences).length === 0) {
+                        return { type: 'info', content: 'No open windows.' };
+                    }
+                    let output = '\n🪟 OPEN WINDOWS:\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+                    Object.keys(windowReferences).forEach((id, index) => {
+                        output += `${index + 1}. ${id}\n`;
+                    });
+                    return output;
+                }
+
+                if (args[0] === 'close' && args[1]) {
+                    const windowId = args[1];
+                    if (windowReferences[windowId]) {
+                        try {
+                            windowReferences[windowId].close?.();
+                            document.getElementById(windowId)?.remove();
+                            delete windowReferences[windowId];
+                            return { type: 'success', content: `Window '${windowId}' closed.` };
+                        } catch (e) {
+                            return { type: 'error', content: `Could not close window: ${e.message}` };
+                        }
+                    }
+                    return { type: 'error', content: `Window '${windowId}' not found.` };
+                }
+
+                if (args[0] === 'closeall') {
+                    Object.keys(windowReferences).forEach(id => {
+                        try {
+                            windowReferences[id].close?.();
+                            document.getElementById(id)?.remove();
+                        } catch (e) {}
+                    });
+                    Object.keys(windowReferences).forEach(id => delete windowReferences[id]);
+                    return { type: 'success', content: 'All windows closed.' };
+                }
+
+                return { type: 'error', content: 'Usage: windows list|close <id>|closeall' };
+            },
+            random: (args) => {
+                if (!args.length) {
+                    const rand = Math.random();
+                    return { type: 'info', content: `Random: ${rand}` };
+                }
+
+                if (args.length === 2) {
+                    const min = parseInt(args[0]);
+                    const max = parseInt(args[1]);
+                    if (isNaN(min) || isNaN(max)) {
+                        return { type: 'error', content: 'Usage: random [min max]' };
+                    }
+                    const rand = Math.floor(Math.random() * (max - min + 1)) + min;
+                    return { type: 'info', content: `Random (${min}-${max}): ${rand}` };
+                }
+
+                return { type: 'error', content: 'Usage: random or random <min> <max>' };
+            },
+            math: (args) => {
+                if (!args.length) {
+                    return { type: 'error', content: 'Usage: math <expression> (e.g., 2+2, 10*5, 100/4)' };
+                }
+
+                const expression = args.join(' ');
+                try {
+                    // Safe evaluation - only allow basic math
+                    const result = Function('"use strict"; return (' + expression + ')')();
+                    return { type: 'success', content: `${expression} = ${result}` };
+                } catch (error) {
+                    return { type: 'error', content: `Invalid expression: ${error.message}` };
+                }
+            },
+            base64: (args) => {
+                if (!args.length || !args[1]) {
+                    return { type: 'error', content: 'Usage: base64 encode|decode <text>' };
+                }
+
+                const action = args[0].toLowerCase();
+                const text = args.slice(1).join(' ');
+
+                try {
+                    if (action === 'encode') {
+                        const encoded = btoa(text);
+                        return { type: 'success', content: `Encoded: ${encoded}` };
+                    } else if (action === 'decode') {
+                        const decoded = atob(text);
+                        return { type: 'success', content: `Decoded: ${decoded}` };
+                    }
+                    return { type: 'error', content: 'Usage: base64 encode|decode <text>' };
+                } catch (error) {
+                    return { type: 'error', content: `Base64 error: ${error.message}` };
+                }
+            },
+            time: () => {
+                const now = new Date();
+                return now.toLocaleTimeString();
+            },
+            ip: () => {
+                return { type: 'info', content: `Protocol: ${window.location.protocol}\nHost: ${window.location.host}\nPage: ${window.location.pathname}` };
+            },
+            window: (args) => {
+                if (!args.length) {
+                    return { type: 'error', content: 'Usage: window focus <id>' };
+                }
+
+                if (args[0] === 'focus' && args[1]) {
+                    const windowId = args[1];
+                    if (windowReferences[windowId]) {
+                        try {
+                            windowReferences[windowId].focus?.();
+                            return { type: 'success', content: `Focused window: ${windowId}` };
+                        } catch (e) {
+                            return { type: 'error', content: `Could not focus window: ${e.message}` };
+                        }
+                    }
+                    return { type: 'error', content: `Window not found: ${windowId}` };
+                }
+
+                return { type: 'error', content: 'Usage: window focus <id>' };
+            }
+        };
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'popup-notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transition = 'opacity 0.3s';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        function addLine(content, type = 'output') {
+            const line = document.createElement('div');
+            line.className = 'terminal-line';
+
+            if (typeof content === 'object') {
+                const prompt = document.createElement('span');
+                prompt.className = 'prompt';
+                prompt.textContent = '>';
+
+                const output = document.createElement('span');
+                output.className = `output ${content.type}`;
+                output.textContent = content.content;
+                line.appendChild(prompt);
+                line.appendChild(output);
+
+                if (content.code) {
+                    const codeLine = document.createElement('div');
+                    codeLine.className = 'output code';
+                    codeLine.textContent = content.code;
+                    terminalBody.appendChild(line);
+                    terminalBody.appendChild(codeLine);
+                    terminalBody.scrollTop = terminalBody.scrollHeight;
+                    return;
+                }
+            } else {
+                const prompt = document.createElement('span');
+                prompt.className = 'prompt';
+                prompt.textContent = '>';
+
+                const output = document.createElement('span');
+                output.className = `output ${type}`;
+                
+                if (typeof content === 'string' && content.includes('\n')) {
+                    output.style.whiteSpace = 'pre-wrap';
+                }
+                output.textContent = content;
+                line.appendChild(prompt);
+                line.appendChild(output);
+            }
+
+            terminalBody.appendChild(line);
+            terminalBody.scrollTop = terminalBody.scrollHeight;
+        }
+
+        function addCommandLine(cmd) {
+            const line = document.createElement('div');
+            line.className = 'terminal-line';
+
+            const prompt = document.createElement('span');
+            prompt.className = 'prompt';
+            prompt.textContent = '$\\:nvg:{';
+
+            const command = document.createElement('span');
+            command.className = 'command-input';
+            command.textContent = cmd;
+
+            line.appendChild(prompt);
+            line.appendChild(command);
+            terminalBody.appendChild(line);
+            terminalBody.scrollTop = terminalBody.scrollHeight;
+        }
+
+        async function executeCommand(input) {
+            addCommandLine(input);
+
+            const parts = input.trim().split(/\s+/);
+            const cmd = parts[0]?.toLowerCase();
+            const args = parts.slice(1);
+
+            if (!cmd) {
+                addLine('Command not found.', 'error');
+                return;
+            }
+
+            if (commands[cmd]) {
+                try {
+                    const result = await commands[cmd](args);
+                    if (result !== null) {
+                        addLine(result, result.type ? result.type : 'output');
+                    }
+                } catch (error) {
+                    addLine(`Error executing command: ${error.message}`, 'error');
+                }
+            } else {
+                addLine(`Command not found: ${cmd}. Type 'help' for available commands.`, 'error');
+            }
+
+            statusText.textContent = 'Ready';
+        }
+
+        commandInput.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                const input = commandInput.value.trim();
+                if (input) {
+                    commandInput.value = '';
+                    await executeCommand(input);
+                }
+            }
+        });
+
+        commandInput.addEventListener('input', (e) => {
+            charCount.textContent = `${e.target.value.length} chars`;
+        });
+
+        // Initial welcome message
+        addLine('Welcome to NVG Terminal - Type "help" to get started.', 'info');
+
+        // Focus input
+        commandInput.focus();
+    </script>
+</body>
+</html>
