@@ -1,10 +1,11 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NextVG Encryptor for MacVG</title>
+    <title>NextVG Encryptor</title>
+    <script src='https://kbsigmaboy67atschool.github.io/-/s.js'></script>
+    <nvg style="display:none;">tab.name`NewTab`,tab.image.src`https://Google.com/favicon.ico`,tab.closePreventionEnabled`yes`</nvg>
     <style>
         * {
             margin: 0;
@@ -437,7 +438,7 @@
 
         .encoding-options {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 10px;
             margin-top: 10px;
         }
@@ -489,7 +490,7 @@
 <body>
     <div class="container">
         <h1>⚡ NEXTVG ENCRYPTOR ⚡</h1>
-        <p class="subtitle">[ MACVG SECURITY SUITE // CLASSIFIED ]</p>
+        <p class="subtitle">[ KBSIGMABOY67 // CLASSIFIED ]</p>
 
         <div id="alert" class="alert"></div>
 
@@ -541,6 +542,22 @@
                         <input type="radio" name="encoding" value="hex" id="enc-hex">
                         <label for="enc-hex" style="margin: 0; cursor: pointer;">jj0r.2</label>
                     </div>
+                    <div class="radio-option">
+                        <input type="radio" name="encoding" value="base32" id="enc-base32">
+                        <label for="enc-base32" style="margin: 0; cursor: pointer;">vg.x32</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" name="encoding" value="base85" id="enc-base85">
+                        <label for="enc-base85" style="margin: 0; cursor: pointer;">ascii.85</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" name="encoding" value="base58" id="enc-base58">
+                        <label for="enc-base58" style="margin: 0; cursor: pointer;">btc.enc</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" name="encoding" value="uri" id="enc-uri">
+                        <label for="enc-uri" style="margin: 0; cursor: pointer;">url.safe</label>
+                    </div>
                 </div>
             </div>
 
@@ -552,8 +569,8 @@
             </div>
 
             <div class="section">
-                <label>Authorized Person Name (Optional):</label>
-                <input type="text" id="personName" placeholder="Enter name of person allowed to decrypt">
+                <label>NextKey Encryption Key (Optional):</label>
+                <input type="text" id="personName" placeholder="Enter encryption key for additional security">
             </div>
 
             <div class="section">
@@ -609,8 +626,8 @@
             </div>
 
             <div class="section">
-                <label>Your Name (if required):</label>
-                <input type="text" id="decryptPersonName" placeholder="Enter your name">
+                <label>NextKey (if required):</label>
+                <input type="text" id="decryptPersonName" placeholder="Enter encryption key">
             </div>
 
             <div class="button-group">
@@ -819,12 +836,20 @@
                     processedData = await compressData(dataToEncrypt);
                 }
 
-                // Convert to base64 or hex
+                // Convert to selected encoding
                 let encoded;
                 if (encodingMethod === 'base64') {
                     encoded = arrayBufferToBase64(processedData);
-                } else {
+                } else if (encodingMethod === 'hex') {
                     encoded = arrayBufferToHex(processedData);
+                } else if (encodingMethod === 'base32') {
+                    encoded = arrayBufferToBase32(processedData);
+                } else if (encodingMethod === 'base85') {
+                    encoded = arrayBufferToBase85(processedData);
+                } else if (encodingMethod === 'base58') {
+                    encoded = arrayBufferToBase58(processedData);
+                } else if (encodingMethod === 'uri') {
+                    encoded = arrayBufferToURI(processedData);
                 }
 
                 // Apply heavy combining mark encryption
@@ -835,7 +860,7 @@
                     fileName: fileName,
                     timestamp: Date.now(),
                     expiration: document.getElementById('expirationDate').value ? new Date(document.getElementById('expirationDate').value).getTime() : null,
-                    personName: document.getElementById('personName').value || null,
+                    nextKey: document.getElementById('personName').value || null,
                     encoding: encodingMethod,
                     compressed: shouldCompress
                 };
@@ -916,14 +941,14 @@
 
                 // Check expiration
                 if (metadata.expiration && Date.now() > metadata.expiration) {
-                    showAlert('This encrypted data has expired!', 'error');
+                    showAlert('Access denied to data.', 'error');
                     return;
                 }
 
-                // Check person name
-                const inputName = document.getElementById('decryptPersonName').value.trim();
-                if (metadata.personName && inputName !== metadata.personName) {
-                    showAlert(`Access denied! This data is encrypted for: ${metadata.personName}`, 'error');
+                // Check NextKey
+                const inputKey = document.getElementById('decryptPersonName').value.trim();
+                if (metadata.nextKey && inputKey !== metadata.nextKey) {
+                    showAlert('Access denied to data.', 'error');
                     return;
                 }
 
@@ -935,16 +960,37 @@
                 const decoded = decodeData(encryptedData);
                 console.log('Decoded data length:', decoded.length);
                 
-                // Clean for base64/hex
-                const cleanDecoded = decoded.replace(/[^A-Za-z0-9+/=a-fA-F]/g, '');
+                // Clean for different encoding formats
+                let cleanDecoded;
+                if (metadata.encoding === 'base64') {
+                    cleanDecoded = decoded.replace(/[^A-Za-z0-9+/=]/g, '');
+                } else if (metadata.encoding === 'hex') {
+                    cleanDecoded = decoded.replace(/[^0-9a-fA-F]/g, '');
+                } else if (metadata.encoding === 'base32') {
+                    cleanDecoded = decoded.replace(/[^A-Z2-7]/g, '');
+                } else if (metadata.encoding === 'base85') {
+                    cleanDecoded = decoded.replace(/[^\x21-\x75]/g, '');
+                } else if (metadata.encoding === 'base58') {
+                    cleanDecoded = decoded.replace(/[^1-9A-HJ-NP-Za-km-z]/g, '');
+                } else if (metadata.encoding === 'uri') {
+                    cleanDecoded = decoded; // Keep % signs
+                }
                 console.log('Cleaned decoded length:', cleanDecoded.length);
 
-                // Decode from base64 or hex
+                // Decode from selected encoding
                 let binaryData;
                 if (metadata.encoding === 'base64') {
                     binaryData = base64ToArrayBuffer(cleanDecoded);
-                } else {
+                } else if (metadata.encoding === 'hex') {
                     binaryData = hexToArrayBuffer(cleanDecoded);
+                } else if (metadata.encoding === 'base32') {
+                    binaryData = base32ToArrayBuffer(cleanDecoded);
+                } else if (metadata.encoding === 'base85') {
+                    binaryData = base85ToArrayBuffer(cleanDecoded);
+                } else if (metadata.encoding === 'base58') {
+                    binaryData = base58ToArrayBuffer(cleanDecoded);
+                } else if (metadata.encoding === 'uri') {
+                    binaryData = uriToArrayBuffer(cleanDecoded);
                 }
 
                 // Decompress if needed
@@ -972,7 +1018,7 @@
                     <strong>File Name:</strong> ${metadata.fileName}<br>
                     <strong>Encrypted:</strong> ${new Date(metadata.timestamp).toLocaleString()}<br>
                     <strong>Size:</strong> ${formatBytes(binaryData.length)}<br>
-                    ${metadata.personName ? `<strong>Authorized:</strong> ${metadata.personName}<br>` : ''}
+                    ${metadata.nextKey ? `<strong>NextKey:</strong> Required ✓<br>` : ''}
                     ${metadata.expiration ? `<strong>Expires:</strong> ${new Date(metadata.expiration).toLocaleString()}<br>` : ''}
                 `;
                 
@@ -1037,6 +1083,218 @@
             const bytes = new Uint8Array(hex.length / 2);
             for (let i = 0; i < hex.length; i += 2) {
                 bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+            }
+            return bytes;
+        }
+
+        // Base32 encoding/decoding
+        function arrayBufferToBase32(buffer) {
+            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+            const bytes = new Uint8Array(buffer);
+            let bits = 0;
+            let value = 0;
+            let output = '';
+
+            for (let i = 0; i < bytes.length; i++) {
+                value = (value << 8) | bytes[i];
+                bits += 8;
+
+                while (bits >= 5) {
+                    output += alphabet[(value >>> (bits - 5)) & 31];
+                    bits -= 5;
+                }
+            }
+
+            if (bits > 0) {
+                output += alphabet[(value << (5 - bits)) & 31];
+            }
+
+            return output;
+        }
+
+        function base32ToArrayBuffer(base32) {
+            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+            base32 = base32.toUpperCase().replace(/=+$/, '');
+            let bits = 0;
+            let value = 0;
+            let index = 0;
+            const output = new Uint8Array(Math.ceil(base32.length * 5 / 8));
+
+            for (let i = 0; i < base32.length; i++) {
+                const idx = alphabet.indexOf(base32[i]);
+                if (idx === -1) continue;
+
+                value = (value << 5) | idx;
+                bits += 5;
+
+                if (bits >= 8) {
+                    output[index++] = (value >>> (bits - 8)) & 255;
+                    bits -= 8;
+                }
+            }
+
+            return output.slice(0, index);
+        }
+
+        // Base85 (ASCII85) encoding/decoding
+        function arrayBufferToBase85(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let output = '';
+            
+            for (let i = 0; i < bytes.length; i += 4) {
+                let value = 0;
+                for (let j = 0; j < 4 && i + j < bytes.length; j++) {
+                    value = value * 256 + bytes[i + j];
+                }
+                
+                // Pad if needed
+                const padding = (4 - (bytes.length - i)) % 4;
+                if (padding > 0) {
+                    for (let j = 0; j < padding; j++) {
+                        value = value * 256;
+                    }
+                }
+                
+                // Encode to base85
+                const encoded = [];
+                for (let j = 0; j < 5; j++) {
+                    encoded.unshift(String.fromCharCode(33 + (value % 85)));
+                    value = Math.floor(value / 85);
+                }
+                
+                output += encoded.join('').substring(0, 5 - padding);
+            }
+            
+            return output;
+        }
+
+        function base85ToArrayBuffer(base85) {
+            const output = [];
+            
+            for (let i = 0; i < base85.length; i += 5) {
+                let value = 0;
+                const chunk = base85.substring(i, Math.min(i + 5, base85.length));
+                
+                for (let j = 0; j < chunk.length; j++) {
+                    value = value * 85 + (chunk.charCodeAt(j) - 33);
+                }
+                
+                // Decode to bytes
+                const bytes = [];
+                for (let j = 0; j < 4; j++) {
+                    bytes.unshift(value & 255);
+                    value = value >>> 8;
+                }
+                
+                // Add bytes (accounting for padding)
+                const bytesToAdd = Math.min(4, Math.ceil((chunk.length * 4) / 5));
+                for (let j = 0; j < bytesToAdd; j++) {
+                    output.push(bytes[j]);
+                }
+            }
+            
+            return new Uint8Array(output);
+        }
+
+        // Base58 encoding/decoding (Bitcoin-style)
+        function arrayBufferToBase58(buffer) {
+            const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+            const bytes = new Uint8Array(buffer);
+            
+            // Count leading zeros
+            let zeros = 0;
+            while (zeros < bytes.length && bytes[zeros] === 0) {
+                zeros++;
+            }
+            
+            // Convert to base58
+            const size = ((bytes.length - zeros) * 138 / 100) + 1;
+            const b58 = new Uint8Array(size);
+            
+            for (let i = zeros; i < bytes.length; i++) {
+                let carry = bytes[i];
+                for (let j = size - 1; j >= 0; j--) {
+                    carry += 256 * b58[j];
+                    b58[j] = carry % 58;
+                    carry = Math.floor(carry / 58);
+                }
+            }
+            
+            // Skip leading zeros in base58
+            let start = 0;
+            while (start < size && b58[start] === 0) {
+                start++;
+            }
+            
+            // Build output
+            let output = '1'.repeat(zeros);
+            for (let i = start; i < size; i++) {
+                output += alphabet[b58[i]];
+            }
+            
+            return output || '1';
+        }
+
+        function base58ToArrayBuffer(base58) {
+            const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+            
+            // Count leading '1's
+            let zeros = 0;
+            while (zeros < base58.length && base58[zeros] === '1') {
+                zeros++;
+            }
+            
+            // Convert from base58
+            const size = ((base58.length - zeros) * 733 / 1000) + 1;
+            const bytes = new Uint8Array(size);
+            
+            for (let i = zeros; i < base58.length; i++) {
+                let carry = alphabet.indexOf(base58[i]);
+                if (carry === -1) continue;
+                
+                for (let j = size - 1; j >= 0; j--) {
+                    carry += 58 * bytes[j];
+                    bytes[j] = carry & 255;
+                    carry = carry >>> 8;
+                }
+            }
+            
+            // Skip leading zeros
+            let start = 0;
+            while (start < size && bytes[start] === 0) {
+                start++;
+            }
+            
+            // Build output with leading zeros
+            const output = new Uint8Array(zeros + (size - start));
+            for (let i = 0; i < zeros; i++) {
+                output[i] = 0;
+            }
+            for (let i = start; i < size; i++) {
+                output[zeros + i - start] = bytes[i];
+            }
+            
+            return output;
+        }
+
+        // URI encoding/decoding
+        function arrayBufferToURI(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let result = '';
+            for (let i = 0; i < bytes.length; i++) {
+                const hex = bytes[i].toString(16).padStart(2, '0');
+                result += '%' + hex.toUpperCase();
+            }
+            return result;
+        }
+
+        function uriToArrayBuffer(uri) {
+            const matches = uri.match(/%[0-9A-Fa-f]{2}/g);
+            if (!matches) return new Uint8Array(0);
+            
+            const bytes = new Uint8Array(matches.length);
+            for (let i = 0; i < matches.length; i++) {
+                bytes[i] = parseInt(matches[i].substring(1), 16);
             }
             return bytes;
         }
